@@ -38,6 +38,7 @@ import {
   touchSupportConversationDb,
 } from '../lib/support-chat-db';
 import { getProductSpecificationTags } from '../lib/product-specification-tags';
+import { SEED_PRODUCTS } from '../lib/seed-products';
 import { inferAutoSpecificationTags } from '../lib/infer-auto-specification-tags';
 import { getDataLoadScope } from '../lib/data-load-scope';
 import { setStoredDebounced } from '../lib/debounce-storage';
@@ -311,9 +312,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadScope = getDataLoadScope(pathname);
 
   // Initialize from localStorage on client so the first render has stored data when not using Supabase.
-  const [products, setProducts] = useState<Product[]>(() =>
-    enrichProductsWithSeedSpecificationTags(getStored('admin_products', []), [])
-  );
+  // Fall back to SEED_PRODUCTS when localStorage is empty and Supabase is not configured.
+  const [products, setProducts] = useState<Product[]>(() => {
+    const stored = getStored<Product[]>('admin_products', []);
+    const base = stored.length > 0 ? stored : SEED_PRODUCTS;
+    return enrichProductsWithSeedSpecificationTags(base, []);
+  });
   const [productsLoading, setProductsLoading] = useState<boolean>(() => isSupabaseConfigured());
   const [categories, setCategories] = useState<Category[]>(() => getStored('admin_categories', []));
   const [invoices, setInvoices] = useState<Invoice[]>(() => getStored('admin_invoices', []));
@@ -376,7 +380,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyLocalStorageFallback = useCallback(() => {
-    setProducts(enrichProductsWithSeedSpecificationTags(getStored('admin_products', []), []));
+    const storedProducts = getStored<Product[]>('admin_products', []);
+    const baseProducts = storedProducts.length > 0 ? storedProducts : SEED_PRODUCTS;
+    setProducts(enrichProductsWithSeedSpecificationTags(baseProducts, []));
     setCategories(getStored('admin_categories', []));
     setInvoices(getStored('admin_invoices', []));
     setCustomers(getStored('admin_customers', []));
