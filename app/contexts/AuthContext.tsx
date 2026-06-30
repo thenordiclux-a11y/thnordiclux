@@ -67,6 +67,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Error reading users from storage:', error);
     }
 
+    // Default admin fallback when no users have been configured yet
+    const DEFAULT_ADMIN_EMAIL = 'admin@thenordiclux.com';
+    const DEFAULT_ADMIN_PASSWORD = 'NordicLux@2025';
+    if (
+      email.toLowerCase() === DEFAULT_ADMIN_EMAIL.toLowerCase() &&
+      password === DEFAULT_ADMIN_PASSWORD
+    ) {
+      const authUser: User = {
+        id: 'default-admin',
+        email: DEFAULT_ADMIN_EMAIL,
+        name: 'mainadmin',
+        role: 'admin',
+        createdAt: new Date().toISOString(),
+      };
+      setUser(authUser);
+      localStorage.setItem('admin_user', JSON.stringify(authUser));
+      return true;
+    }
+
     return false;
   };
 
