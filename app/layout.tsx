@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Providers } from './providers'
 import { AdminMiddleware } from './admin/middleware'
 import { AffiliateMiddleware } from './affiliate/middleware'
+import WhatsAppButton from './components/WhatsAppButton'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function RootLayout({
           <AffiliateMiddleware>
             <AdminMiddleware>{children}</AdminMiddleware>
           </AffiliateMiddleware>
+          <WhatsAppButton />
         </Providers>
       </body>
     </html>
