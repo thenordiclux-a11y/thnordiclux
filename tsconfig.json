@@ -20,6 +20,6 @@
     ],
     "paths": {}
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "types/**/*.d.ts"],
-  "exclude": ["node_modules", "src/pages", "src/_pages_backup", "src/main.tsx", "src/App.tsx", "src/vite-env.d.ts", "vite.config.ts"]
+  "include": ["next-env.d.ts", "app/**/*.ts", "app/**/*.tsx", "types/**/*.d.ts", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

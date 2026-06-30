@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+}
+
+@layer components {
+  .cms-richtext h2 {
+    @apply text-2xl font-bold mt-8 mb-3 text-foreground;
+  }
+  .cms-richtext h3 {
+    @apply text-xl font-semibold mt-6 mb-2 text-foreground;
+  }
+  .cms-richtext h4 {
+    @apply text-sm font-medium uppercase tracking-wider mt-6 mb-3 text-foreground;
+  }
+  .cms-richtext p {
+    @apply mb-4 text-base leading-relaxed text-foreground/90;
+  }
+  .cms-richtext ul {
+    @apply list-disc pl-6 mb-4 space-y-1 text-foreground/90;
+  }
+  .cms-richtext ol {
+    @apply list-decimal pl-6 mb-4 space-y-1 text-foreground/90;
+  }
+  .cms-richtext blockquote {
+    @apply border-l-4 border-muted-foreground/30 pl-4 italic text-muted-foreground my-4;
+  }
+  .cms-richtext a {
+    @apply text-primary underline underline-offset-2 hover:opacity-90;
+  }
+  .cms-richtext strong {
+    @apply font-semibold text-foreground;
+  }
+}
+
+/* Prevent stuck overlays from covering the page - fully hide when closed */
+[data-slot="sheet-overlay"][data-state="closed"],
+[data-slot="dialog-overlay"][data-state="closed"],
+[data-slot="alert-dialog-overlay"][data-state="closed"],
+[data-slot="drawer-overlay"][data-state="closed"] {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
