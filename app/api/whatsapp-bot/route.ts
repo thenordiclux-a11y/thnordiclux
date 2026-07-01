@@ -5,6 +5,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'nordiclux_verify_2025';
+
 // Nordic Lux product catalog for the bot context
 const PRODUCT_CATALOG = `
 NORDIC LUX PRODUCT CATALOG
@@ -52,23 +56,11 @@ STORE INFO:
 - WhatsApp: +94770130299
 - All products are authentic, imported from US/UK/Canada
 - Free shipping on orders over $50
-- Orders can be placed via the website
+- Orders placed via the website
 `;
 
-export async function POST(request: NextRequest) {
+async function generateAIReply(userMessage: string): Promise<string> {
   try {
-    // Parse Twilio webhook body (application/x-www-form-urlencoded)
-    const formData = await request.formData();
-    const incomingMessage = formData.get('Body') as string;
-    const from = formData.get('From') as string;
-
-    if (!incomingMessage) {
-      return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
-        headers: { 'Content-Type': 'text/xml' },
-      });
-    }
-
-    // Generate AI response using OpenAI
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -87,8 +79,7 @@ IMPORTANT RULES:
 - Be warm, friendly, and professional
 - Keep responses concise and easy to read (use emojis sparingly)
 - Always mention the product name and price when discussing specific products
-- If stock is low (1-2 units), mention "limited stock available"
-- If a product is out of stock, suggest alternatives
+- If stock is 1-2 units, mention "limited stock available - order soon!"
 - For skincare advice, always recommend consulting a dermatologist for serious conditions
 - Direct customers to the website https://thnordiclux.vercel.app to place orders
 - Respond in the same language the customer uses (English or Sinhala)
@@ -99,38 +90,105 @@ ${PRODUCT_CATALOG}`,
         },
         {
           role: 'user',
-          content: incomingMessage,
+          content: userMessage,
         },
       ],
       max_tokens: 400,
       temperature: 0.7,
     });
 
-    const botReply = completion.choices[0]?.message?.content || 
-      "Hi! Thank you for contacting Nordic Lux. Our team will get back to you shortly. You can also browse our products at https://thnordiclux.vercel.app 😊";
-
-    // Return Twilio TwiML response
-    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>${botReply.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</Message>
-</Response>`;
-
-    return new NextResponse(twimlResponse, {
-      headers: { 'Content-Type': 'text/xml' },
-    });
+    return completion.choices[0]?.message?.content ||
+      'Hi! Thank you for contacting Nordic Lux 🌿 Our team will get back to you shortly. Browse our products at https://thnordiclux.vercel.app';
   } catch (error) {
-    console.error('WhatsApp bot error:', error);
-    const fallback = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Message>Hi! Thank you for contacting Nordic Lux 🌿 We'll get back to you shortly. Browse our products at https://thnordiclux.vercel.app</Message>
-</Response>`;
-    return new NextResponse(fallback, {
-      headers: { 'Content-Type': 'text/xml' },
-    });
+    console.error('OpenAI error:', error);
+    return 'Hi! Thank you for contacting Nordic Lux 🌿 We\'ll get back to you shortly. Browse our products at https://thnordiclux.vercel.app';
   }
 }
 
-// Health check
-export async function GET() {
-  return NextResponse.json({ status: 'Nordic Lux WhatsApp Bot is running ✅' });
+async function sendWhatsAppMessage(to: string, message: string) {
+  const url = `https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'text',
+      text: { body: message },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('WhatsApp send error:', error);
+  }
+
+  return response;
+}
+
+// GET: Webhook verification by Meta
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const mode = searchParams.get('hub.mode');
+  const token = searchParams.get('hub.verify_token');
+  const challenge = searchParams.get('hub.challenge');
+
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('Webhook verified successfully');
+    return new NextResponse(challenge, { status: 200 });
+  }
+
+  return new NextResponse('Forbidden', { status: 403 });
+}
+
+// POST: Receive incoming WhatsApp messages
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Extract message from Meta webhook payload
+    const entry = body?.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
+
+    if (!messages || messages.length === 0) {
+      // Could be a status update, just acknowledge
+      return NextResponse.json({ status: 'ok' });
+    }
+
+    const message = messages[0];
+    const from = message.from; // Customer's WhatsApp number
+    const messageType = message.type;
+
+    // Only handle text messages
+    if (messageType !== 'text') {
+      await sendWhatsAppMessage(
+        from,
+        'Hi! I can only respond to text messages right now. Please type your question and I\'ll be happy to help! 😊'
+      );
+      return NextResponse.json({ status: 'ok' });
+    }
+
+    const userText = message.text?.body || '';
+
+    if (!userText.trim()) {
+      return NextResponse.json({ status: 'ok' });
+    }
+
+    // Generate AI response
+    const aiReply = await generateAIReply(userText);
+
+    // Send reply back to customer
+    await sendWhatsAppMessage(from, aiReply);
+
+    return NextResponse.json({ status: 'ok' });
+  } catch (error) {
+    console.error('WhatsApp bot error:', error);
+    return NextResponse.json({ status: 'error' }, { status: 500 });
+  }
 }
