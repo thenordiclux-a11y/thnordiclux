@@ -3,6 +3,7 @@ import { Providers } from './providers'
 import { AdminMiddleware } from './admin/middleware'
 import { AffiliateMiddleware } from './affiliate/middleware'
 import WhatsAppButton from './components/WhatsAppButton'
+import AIChatWidget from './components/AIChatWidget'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default function RootLayout({
             <AdminMiddleware>{children}</AdminMiddleware>
           </AffiliateMiddleware>
           <WhatsAppButton />
+          <AIChatWidget />
         </Providers>
       </body>
     </html>
