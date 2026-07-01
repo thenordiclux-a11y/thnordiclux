@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_API_BASE || 'https://api.openai.com/v1',
 });
 
 const PRODUCT_CATALOG = `
